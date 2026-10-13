@@ -24,8 +24,17 @@ jobs:
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose app/build/outputs/apk/debug/app-debug.apk
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose manual/build/outputs/apk/debug/manual-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging manual/build/outputs/apk/debug/manual-debug.apk
+      - name: Check manual APK has no SMS or notification collection
+        run: python3 scripts/check-manual-apk.py "$ANDROID_HOME/build-tools/35.0.0/aapt" manual/build/outputs/apk/debug/manual-debug.apk
       - uses: actions/upload-artifact@v4
         with:
           name: HC-Mobile-Bank-Bridge-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HC-Mobile-Bank-Bridge-manual-debug
+          path: manual/build/outputs/apk/debug/manual-debug.apk
           if-no-files-found: error

@@ -1,15 +1,10 @@
 package kr.hc.bankbridge
 
-import android.app.Application
 import android.content.Context
 import androidx.work.*
 import org.json.JSONObject
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-
-class BridgeApp : Application() {
-    override fun onCreate() { super.onCreate(); Bridge.schedule(this) }
-}
 
 object Bridge {
     private val lock = Any()

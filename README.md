@@ -2,10 +2,21 @@
 
 가족끼리 직접 APK를 설치하는 Kotlin Android 앱입니다. Android 8.0(API 26) 이상을 지원합니다.
 
+## 두 가지 APK
+- 자동 수집: **HC-Mobile-Bank-Bridge-debug** → app-debug.apk. 등록한 번호의 SMS와 은행 앱 알림을 수집합니다. 새 버전은 자동 수집이 기본으로 꺼져 있으며, 수집·전송 동의와 Android 권한 허용 후 켜야 합니다.
+- 수동 입력: **HC-Mobile-Bank-Bridge-manual-debug** → manual-debug.apk. SMS·알림 접근 권한과 수집 서비스를 포함하지 않습니다. 사용자가 문자·알림 원문을 붙여넣거나 다른 앱에서 텍스트를 공유한 후 전송 버튼을 눌러야 합니다. 자동 수집은 지원하지 않습니다.
+
+두 앱은 서버 설정, 키워드 분류, 금액 파싱, 200건 저장, 자동 재전송, 테스트 입금 전송 및 전송 로그 기능을 공유합니다. 수동 입력 이벤트의 source는 MANUAL입니다.
+수동 앱의 패키지는 kr.hc.bankbridge.manual이며 자동 앱과 구분해 설치됩니다. 각 앱의 설정과 대기열은 분리됩니다.
+
+SMS 수신·알림 접근 권한은 민감한 권한이며 직접 설치 시 휴대폰 보안 정책에 따라 앱 설치가 차단될 수 있습니다. 앱 빌드·서명 검증이나 수동 버전 제공은 보안 검토 통과 및 모든 휴대폰의 설치 성공을 보장하지 않습니다. 보안 프로그램에 잘못 차단된 것으로 판단되면 해당 업체의 공식 검토 절차를 이용하세요.
+자동 앱은 은행 앱을 변경하거나 알림을 숨기지 않습니다. 수집을 끄면 새 수집만 중단하고 이미 저장한 이벤트는 계속 전송합니다.
+
 ## 설치와 설정
 1. GitHub Actions의 **Build Android APK** 성공 실행 → Artifacts → **HC-Mobile-Bank-Bridge-debug** 다운로드 → ZIP 안의 app-debug.apk 설치.
 2. 앱에서 ERP 서버 URL과 API 토큰을 입력하고 SMS 발신번호 및 은행 앱 packageName을 등록하세요. 줄바꿈 또는 쉼표로 여러 항목을 등록합니다.
 3. SMS 수신 권한과 Android 알림 접근 권한을 허용하세요. Android가 알림 접근을 제한하면 앱 정보의 메뉴에서 제한된 설정 허용 후 다시 시도하세요.
+   자동 수집 동의 안내를 읽고 동의해야 수집이 켜집니다. 수동 APK에는 이 권한 설정이 없습니다.
 4. 설정 저장 후 테스트 입금 이벤트를 전송하고 전송 로그를 확인하세요. 은행 앱 packageName은 해당 앱의 Play Store URL의 id 값으로 확인할 수 있습니다.
 
 등록한 번호의 SMS는 키워드와 관계없이 모두 수집합니다. 새로 게시된 등록 패키지의 알림만 수집하며 그룹 요약 알림은 제외합니다. 앱에 수신 이전의 SMS나 알림을 소급 조회하는 기능은 없습니다. 사용자가 권한을 철회하면 수집되지 않습니다.
@@ -27,7 +38,7 @@ Idempotency-Key: eventId
   "receivedAt": "2026-10-13T01:00:00Z"
 }
 ```
-source는 SMS, NOTIFICATION, TEST입니다. NOTIFICATION은 sender와 packageName에 앱 패키지를 포함합니다.
+source는 SMS, NOTIFICATION, MANUAL, TEST입니다. NOTIFICATION은 sender와 packageName에 앱 패키지를 포함합니다. 수동 입력은 MANUAL, 테스트 이벤트는 TEST로 전송합니다.
 분류는 출금 → 입금 → 은행 알림 → GENERAL 우선순위이며 키워드는 앱에서 수정합니다.
 금액은 원/₩ 표기의 정수로 파싱하고 없거나 범위를 넘으면 null입니다. 여러 금액이 있으면 거래 키워드 뒤 첫 금액을 우선합니다. 은행별 문장 형식에 따라 정확한 거래 금액인지 ERP에서 확인하세요.
 
@@ -47,5 +58,6 @@ JDK 17, Android SDK 35 및 인터넷 연결:
 ./gradlew testDebugUnitTest lintDebug
 ```
 APK: app/build/outputs/apk/debug/app-debug.apk  
+수동 APK: manual/build/outputs/apk/debug/manual-debug.apk
 main push 또는 수동 실행 시 .github/workflows/build-apk.yml에서 APK를 빌드합니다.
 debug APK는 Actions 실행마다 서명키가 달라질 수 있어 이전 버전 위에 설치가 안 되면 삭제 후 설치해야 합니다(설정/대기열 삭제). 장기 업데이트에는 고정 서명키 사용이 필요합니다.

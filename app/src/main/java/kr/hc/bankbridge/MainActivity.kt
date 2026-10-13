@@ -42,11 +42,20 @@ class MainActivity : Activity() {
         label("HC 입금알림 브릿지", 25f)
         label("등록한 번호의 SMS와 등록한 은행 앱 알림을 ERP 서버로 전송합니다. 키워드는 분류에만 사용하며 수집 내용을 제한하지 않습니다.", 15f)
         status = label("", 15f)
+        button("자동 수집 켜기 / 끄기") {
+            if (settings.collectionEnabled) {
+                settings.setCollectionEnabled(false)
+                toast("자동 수집을 껐습니다. 이미 저장한 대기 이벤트는 전송됩니다.")
+                updateStatus()
+            } else requestCollectionConsent()
+        }
         button("SMS 수신 권한 허용") {
-            requestPermissions(arrayOf(Manifest.permission.RECEIVE_SMS), 1)
+            val request = { requestPermissions(arrayOf(Manifest.permission.RECEIVE_SMS), 1) }
+            if (settings.collectionEnabled) request() else requestCollectionConsent(request)
         }
         button("알림 접근 권한 설정") {
-            startActivity(Intent(AndroidSettings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            val request = { startActivity(Intent(AndroidSettings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+            if (settings.collectionEnabled) request() else requestCollectionConsent(request)
         }
         label("서버 연결", 21f)
         field("url", "ERP 서버 URL", false, InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI)
@@ -118,7 +127,18 @@ class MainActivity : Activity() {
         val count = Store(this).use { it.count() }
         status.text = "SMS 권한: " + (if (sms) "허용" else "미허용") +
             "\n알림 접근: " + (if (enabled) "허용" else "미허용") +
+            "\n자동 수집: " + (if (settings.collectionEnabled) "켜짐" else "꺼짐") +
             "\n전송 대기: " + count + " / 200건"
+    }
+    private fun requestCollectionConsent(onApproved: () -> Unit = {}) {
+        AlertDialog.Builder(this).setTitle("문자·알림 수집 및 전송 동의")
+            .setMessage("등록한 발신번호의 새 SMS와 등록한 은행 앱의 새 알림을 앱이 닫혀 있어도 수집합니다. 발신정보, 문자·알림 원문, 파싱한 금액과 수신시각을 설정한 ERP 서버로 전송합니다. 금융정보나 인증번호가 원문에 포함될 수 있습니다.\n\n전송 대기는 기기에 최대 200건 저장합니다. 자동 수집을 끄거나 Android 권한을 철회하면 새 수집을 중단합니다. 이미 저장한 이벤트는 계속 전송됩니다. 본인 또는 동의받은 가족의 기기에서만 사용하세요.")
+            .setPositiveButton("동의하고 자동 수집 켜기") { _, _ ->
+                settings.setCollectionEnabled(true)
+                updateStatus()
+                onApproved()
+            }
+            .setNegativeButton("취소", null).show()
     }
     private fun showLogs() {
         val text = TextView(this).apply {

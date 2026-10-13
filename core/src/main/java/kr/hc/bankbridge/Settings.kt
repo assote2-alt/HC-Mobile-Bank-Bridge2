@@ -9,8 +9,12 @@ class Settings(context: Context) {
         prefs.edit().apply { values.forEach { (key, value) -> putString(key, value.trim()) } }.commit()
     }
     fun list(key: String) = get(key).split(Regex("[,;\\n]+")).map { it.trim() }.filter { it.isNotEmpty() }
-    fun acceptsSms(number: String) = list("numbers").any { Parser.phone(it) == Parser.phone(number) }
-    fun acceptsPackage(name: String) = name in list("packages")
+    val collectionEnabled: Boolean get() = prefs.getBoolean("collectionEnabled", false)
+    fun setCollectionEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("collectionEnabled", enabled).commit()
+    }
+    fun acceptsSms(number: String) = collectionEnabled && list("numbers").any { Parser.phone(it) == Parser.phone(number) }
+    fun acceptsPackage(name: String) = collectionEnabled && name in list("packages")
     companion object {
         val defaults = mapOf(
             "deposit" to "입금,입금완료,받으셨",
