@@ -13,6 +13,10 @@ class Settings(context: Context) {
     fun setCollectionEnabled(enabled: Boolean) {
         prefs.edit().putBoolean("collectionEnabled", enabled).commit()
     }
+    val faxEnabled: Boolean get() = prefs.getBoolean("faxEnabled", false)
+    fun setFaxEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("faxEnabled", enabled).commit()
+    }
     fun acceptsSms(number: String) = collectionEnabled && list("numbers").any { Parser.phone(it) == Parser.phone(number) }
     fun acceptsPackage(name: String) = collectionEnabled && name in list("packages")
     companion object {
